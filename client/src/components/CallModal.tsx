@@ -77,6 +77,7 @@ export default function CallModal({
       setCallDuration(0);
       
       // Send call start signal via WebSocket to the target user
+      console.log('Sending call start signal to:', targetUserId);
       sendWebSocketMessage({
         type: 'call-start',
         target: targetUserId,
@@ -88,10 +89,14 @@ export default function CallModal({
 
   // Listen for WebSocket signaling messages
   useEffect(() => {
-    const handleWebSocketMessage = (event: MessageEvent) => {
+    const handleWebSocketMessage = (event: Event) => {
       try {
-        const data = JSON.parse(event.data);
+        const customEvent = event as CustomEvent;
+        const data = JSON.parse(customEvent.detail);
+        console.log('Received WebSocket message in call:', data);
+        
         if (data.type && ['offer', 'answer', 'ice-candidate'].includes(data.type)) {
+          console.log('Handling WebRTC signaling message:', data.type);
           handleSignalingMessage(data);
         }
       } catch (error) {
@@ -99,8 +104,8 @@ export default function CallModal({
       }
     };
 
-    window.addEventListener('websocket-message', handleWebSocketMessage);
-    return () => window.removeEventListener('websocket-message', handleWebSocketMessage);
+    window.addEventListener('websocket-message', handleWebSocketMessage as EventListener);
+    return () => window.removeEventListener('websocket-message', handleWebSocketMessage as EventListener);
   }, [handleSignalingMessage]);
 
   const handleEndCall = () => {
@@ -156,7 +161,9 @@ export default function CallModal({
             </Avatar>
           </div>
           <div>
-            <h3 className="text-lg font-semibold">Contact Name</h3>
+            <h3 className="text-lg font-semibold">
+              {currentConversation?.otherUser?.firstName} {currentConversation?.otherUser?.lastName}
+            </h3>
             <p className={cn(
               "text-sm",
               callStatus === 'connected' ? "text-green-600" : "text-gray-500"
