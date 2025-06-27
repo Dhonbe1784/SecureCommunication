@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 interface UseWebRTCProps {
   isVideoCall: boolean;
   onConnectionStateChange?: (state: RTCPeerConnectionState) => void;
+  sendSignalingMessage?: (message: any) => void;
+  targetUserId?: string;
 }
 
 interface UseWebRTCReturn {
@@ -15,6 +17,7 @@ interface UseWebRTCReturn {
   toggleVideo: () => void;
   startScreenShare: () => Promise<void>;
   stopScreenShare: () => Promise<void>;
+  handleSignalingMessage: (message: any) => Promise<void>;
   error: string | null;
 }
 
@@ -26,7 +29,7 @@ const rtcConfig = {
   ]
 };
 
-export function useWebRTC({ isVideoCall, onConnectionStateChange }: UseWebRTCProps): UseWebRTCReturn {
+export function useWebRTC({ isVideoCall, onConnectionStateChange, sendSignalingMessage, targetUserId }: UseWebRTCProps): UseWebRTCReturn {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -34,6 +37,41 @@ export function useWebRTC({ isVideoCall, onConnectionStateChange }: UseWebRTCPro
   
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const originalVideoTrackRef = useRef<MediaStreamTrack | null>(null);
+
+  // Handle incoming signaling messages
+  const handleSignalingMessage = useCallback(async (message: any) => {
+    const peerConnection = peerConnectionRef.current;
+    if (!peerConnection) return;
+
+    try {
+      switch (message.type) {
+        case 'offer':
+          await peerConnection.setRemoteDescription(message.data);
+          const answer = await peerConnection.createAnswer();
+          await peerConnection.setLocalDescription(answer);
+          
+          if (sendSignalingMessage && targetUserId) {
+            sendSignalingMessage({
+              type: 'answer',
+              target: targetUserId,
+              data: answer
+            });
+          }
+          break;
+          
+        case 'answer':
+          await peerConnection.setRemoteDescription(message.data);
+          break;
+          
+        case 'ice-candidate':
+          await peerConnection.addIceCandidate(message.data);
+          break;
+      }
+    } catch (error) {
+      console.error('Error handling signaling message:', error);
+      setError('Failed to handle call signaling');
+    }
+  }, [sendSignalingMessage, targetUserId]);
 
   const startCall = useCallback(async () => {
     try {
@@ -83,18 +121,26 @@ export function useWebRTC({ isVideoCall, onConnectionStateChange }: UseWebRTCPro
 
       // Handle ICE candidates
       peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          // In a real app, send this to remote peer via signaling server
-          console.log('ICE candidate:', event.candidate);
+        if (event.candidate && sendSignalingMessage && targetUserId) {
+          sendSignalingMessage({
+            type: 'ice-candidate',
+            target: targetUserId,
+            data: event.candidate
+          });
         }
       };
 
-      // Simulate connection establishment for demo
-      // In a real app, this would be handled via signaling server
-      setTimeout(() => {
-        setIsConnected(true);
-        onConnectionStateChange?.('connected');
-      }, 2000);
+      // Create and send offer
+      if (sendSignalingMessage && targetUserId) {
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        
+        sendSignalingMessage({
+          type: 'offer',
+          target: targetUserId,
+          data: offer
+        });
+      }
 
     } catch (error) {
       console.error('Failed to start call:', error);
@@ -242,6 +288,7 @@ export function useWebRTC({ isVideoCall, onConnectionStateChange }: UseWebRTCPro
     toggleVideo,
     startScreenShare,
     stopScreenShare,
+    handleSignalingMessage,
     error
   };
 }

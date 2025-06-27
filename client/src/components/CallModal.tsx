@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -26,6 +27,14 @@ export default function CallModal({
   const [callStatus, setCallStatus] = useState<'connecting' | 'connected' | 'ended'>('connecting');
   const [callDuration, setCallDuration] = useState(0);
 
+  // Get conversation details to find the target user
+  const { data: conversations = [] } = useQuery({
+    queryKey: ["/api/conversations"],
+  });
+
+  const currentConversation = conversations.find((conv: any) => conv.id === conversationId);
+  const targetUserId = currentConversation?.otherUser?.id;
+
   const {
     localStream,
     remoteStream,
@@ -33,9 +42,12 @@ export default function CallModal({
     startCall,
     endCall,
     toggleMute,
+    handleSignalingMessage,
     error
   } = useWebRTC({
     isVideoCall: false,
+    sendSignalingMessage: sendWebSocketMessage,
+    targetUserId,
     onConnectionStateChange: (state) => {
       if (state === 'connected') {
         setCallStatus('connected');
@@ -59,29 +71,48 @@ export default function CallModal({
 
   // Start call when modal opens
   useEffect(() => {
-    if (isOpen && conversationId) {
+    if (isOpen && conversationId && targetUserId) {
       startCall();
       setCallStatus('connecting');
       setCallDuration(0);
       
-      // Send call start signal via WebSocket
+      // Send call start signal via WebSocket to the target user
       sendWebSocketMessage({
         type: 'call-start',
-        target: conversationId.toString(),
+        target: targetUserId,
+        conversationId,
         data: { callType: 'voice' }
       });
     }
-  }, [isOpen, conversationId, startCall, sendWebSocketMessage]);
+  }, [isOpen, conversationId, targetUserId, startCall, sendWebSocketMessage]);
+
+  // Listen for WebSocket signaling messages
+  useEffect(() => {
+    const handleWebSocketMessage = (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type && ['offer', 'answer', 'ice-candidate'].includes(data.type)) {
+          handleSignalingMessage(data);
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message for call:', error);
+      }
+    };
+
+    window.addEventListener('websocket-message', handleWebSocketMessage);
+    return () => window.removeEventListener('websocket-message', handleWebSocketMessage);
+  }, [handleSignalingMessage]);
 
   const handleEndCall = () => {
     endCall();
     setCallStatus('ended');
     
     // Send call end signal via WebSocket
-    if (conversationId) {
+    if (conversationId && targetUserId) {
       sendWebSocketMessage({
         type: 'call-end',
-        target: conversationId.toString(),
+        target: targetUserId,
+        conversationId,
         data: { callType: 'voice' }
       });
     }
