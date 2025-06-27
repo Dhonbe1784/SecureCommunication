@@ -169,7 +169,17 @@ export default function ChatArea({
           >
             <Video className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => {
+              toast({
+                title: "Conversation Info",
+                description: `Encrypted conversation with ${currentConversation?.otherUser?.firstName} ${currentConversation?.otherUser?.lastName}. All messages are end-to-end encrypted.`,
+              });
+            }}
+            className="text-gray-500 hover:text-gray-700"
+          >
             <Info className="h-4 w-4" />
           </Button>
           <Button 

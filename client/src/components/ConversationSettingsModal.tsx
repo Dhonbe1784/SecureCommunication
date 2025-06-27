@@ -58,6 +58,10 @@ export default function ConversationSettingsModal({
 
   const clearMessagesMutation = useMutation({
     mutationFn: async () => {
+      console.log('Clearing messages for conversation:', conversationId);
+      if (!conversationId) {
+        throw new Error('No conversation ID provided');
+      }
       return await apiRequest(`/api/conversations/${conversationId}/messages`, {
         method: 'DELETE',
       });
@@ -72,12 +76,12 @@ export default function ConversationSettingsModal({
       onClose();
     },
     onError: (error) => {
+      console.error('Failed to clear messages - Full error:', error);
       toast({
         title: 'Error',
-        description: 'Failed to clear messages.',
+        description: `Failed to clear messages: ${error.message}`,
         variant: 'destructive',
       });
-      console.error('Failed to clear messages:', error);
     },
   });
 
