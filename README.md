@@ -1,176 +1,166 @@
-# SecureChat - Real-Time Communication Platform
+# SecureChat - End-to-End Encrypted Communication Platform
 
-A modern, full-stack real-time communication platform built with React, Express, and PostgreSQL. SecureChat provides secure messaging, voice calls, and video calls with WebRTC technology.
+A modern, full-stack real-time communication platform built with React, Express, and PostgreSQL. Features secure messaging, voice calls, and video calls with WebRTC technology.
 
 ## Features
 
-- **Real-time Messaging**: Instant messaging with WebSocket connections
-- **Voice & Video Calls**: WebRTC-powered peer-to-peer calling
-- **User Authentication**: Secure authentication with Replit Auth
-- **Contact Management**: Add contacts by email search
-- **Conversation Settings**: Auto-clearing messages with customizable timeframes
-- **Responsive Design**: Mobile-first approach with desktop enhancements
-- **End-to-End Security**: Secure communication protocols
+- 🔐 **Secure Authentication** - Replit Auth with OpenID Connect
+- 💬 **Real-time Messaging** - WebSocket-based instant messaging
+- 📞 **Voice & Video Calls** - WebRTC peer-to-peer communication
+- 👥 **Contact Management** - Add and manage contacts via email
+- 🔄 **Auto-clearing Messages** - Configurable message retention
+- 📱 **Responsive Design** - Works on desktop and mobile
+- 🌙 **Dark Mode Support** - Toggle between light and dark themes
 
 ## Tech Stack
 
 ### Frontend
 - React 18 with TypeScript
-- Vite for build tooling
-- Tailwind CSS for styling
-- shadcn/ui component library
+- Tailwind CSS + shadcn/ui components
 - TanStack Query for state management
 - Wouter for routing
+- WebRTC for peer-to-peer calls
 
 ### Backend
-- Node.js with Express.js
-- TypeScript
+- Node.js + Express.js
+- PostgreSQL with Drizzle ORM
 - WebSocket for real-time communication
-- WebRTC for voice/video calls
-- Replit Auth with OpenID Connect
+- OpenID Connect authentication
+- Session management with PostgreSQL storage
 
-### Database
-- PostgreSQL with Neon serverless
-- Drizzle ORM for type-safe queries
-- Session storage with connect-pg-simple
-
-## Getting Started
+## Quick Start
 
 ### Prerequisites
-- Node.js 20 or higher
+- Node.js 18+
 - PostgreSQL database
 - Replit account (for authentication)
 
+### Environment Variables
+
+Create a `.env` file with:
+
+```env
+# Database
+DATABASE_URL=your_postgresql_connection_string
+
+# Authentication
+REPL_ID=your_replit_app_id
+REPLIT_DOMAINS=your-app.replit.app
+ISSUER_URL=https://replit.com/oidc
+
+# Session
+SESSION_SECRET=your_session_secret_key
+```
+
 ### Installation
 
-1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/securechat.git
-cd securechat
-```
-
-2. Install dependencies:
-```bash
+# Install dependencies
 npm install
-```
 
-3. Set up environment variables:
-```bash
-# Copy environment template
-cp .env.example .env
+# Run database migrations
+npm run db:migrate
 
-# Edit .env with your configuration
-DATABASE_URL=your_postgresql_connection_string
-SESSION_SECRET=your_session_secret
-REPL_ID=your_replit_app_id
-ISSUER_URL=https://replit.com/oidc
-REPLIT_DOMAINS=your-replit-domain.replit.app
-```
-
-4. Set up the database:
-```bash
-npm run db:push
-```
-
-5. Start the development server:
-```bash
+# Start development server
 npm run dev
 ```
 
-The application will be available at `http://localhost:5000`.
+### Building for Production
+
+```bash
+# Build the application
+npm run build
+
+# Start production server
+npm start
+```
 
 ## Deployment
 
-### Replit Deployment (Recommended)
-1. Import this repository to Replit
-2. Configure environment variables in Replit Secrets
-3. Run the application using the "Start application" workflow
+### Vercel Deployment
 
-### Manual Deployment
-1. Build the application:
-```bash
-npm run build
-```
+1. **Connect to GitHub**: Push your code to a GitHub repository
+2. **Import to Vercel**: Connect your GitHub repo to Vercel
+3. **Configure Environment Variables**: Add all `.env` variables to Vercel
+4. **Deploy**: Vercel will automatically build and deploy your app
 
-2. Start the production server:
-```bash
-npm start
-```
+### Environment Variables for Vercel
+
+Set these in your Vercel dashboard:
+
+- `DATABASE_URL` - Your PostgreSQL connection string (recommend Neon)
+- `REPL_ID` - Your Replit app ID
+- `REPLIT_DOMAINS` - Your Vercel domain (e.g., `your-app.vercel.app`)
+- `SESSION_SECRET` - A secure random string
+- `NODE_ENV` - Set to `production`
+
+## Database Setup
+
+### Using Neon (Recommended)
+
+1. Create account at [neon.tech](https://neon.tech)
+2. Create a new database
+3. Copy the connection string to `DATABASE_URL`
+4. Run migrations: `npm run db:migrate`
+
+### Local PostgreSQL
+
+1. Install PostgreSQL
+2. Create database: `createdb securechat`
+3. Set `DATABASE_URL=postgresql://user:password@localhost:5432/securechat`
+4. Run migrations: `npm run db:migrate`
 
 ## Project Structure
 
 ```
-securechat/
 ├── client/                 # React frontend
 │   ├── src/
 │   │   ├── components/     # UI components
 │   │   ├── hooks/         # Custom React hooks
-│   │   ├── lib/           # Utility functions
-│   │   └── pages/         # Page components
-│   └── index.html
+│   │   ├── lib/           # Utilities and configs
+│   │   └── pages/         # Route components
 ├── server/                # Express backend
-│   ├── db.ts             # Database connection
-│   ├── routes.ts         # API routes
-│   ├── storage.ts        # Data access layer
-│   └── replitAuth.ts     # Authentication setup
-├── shared/               # Shared types and schemas
-│   └── schema.ts        # Database schema
-└── package.json
+│   ├── routes.ts          # API routes
+│   ├── storage.ts         # Database operations
+│   └── replitAuth.ts      # Authentication setup
+├── shared/                # Shared types and schemas
+│   └── schema.ts          # Database schema
+└── vercel.json           # Vercel deployment config
 ```
 
-## API Endpoints
+## API Documentation
 
-### Authentication
-- `GET /api/auth/user` - Get current user
-- `GET /api/login` - Initiate login flow
+### Authentication Endpoints
+- `GET /api/login` - Initiate login
+- `GET /api/callback` - OAuth callback
 - `GET /api/logout` - Logout user
+- `GET /api/auth/user` - Get current user
 
-### Conversations
+### Chat Endpoints
 - `GET /api/conversations` - Get user conversations
 - `POST /api/conversations` - Create conversation
-- `GET /api/conversations/:id/messages` - Get conversation messages
+- `GET /api/conversations/:id/messages` - Get messages
 - `POST /api/conversations/:id/messages` - Send message
-- `DELETE /api/conversations/:id/messages` - Clear all messages
 
-### Contacts
+### Contact Endpoints
 - `GET /api/contacts` - Get user contacts
 - `POST /api/contacts` - Add contact
-- `GET /api/users/search` - Search users by email
-
-### Call Logs
-- `GET /api/call-logs` - Get call history
-- `POST /api/call-logs` - Create call log
-
-## WebSocket Events
-
-### Call Signaling
-- `call-start` - Initiate voice/video call
-- `call-accept` - Accept incoming call
-- `call-reject` - Reject incoming call
-- `call-end` - End active call
-- `offer` - WebRTC offer
-- `answer` - WebRTC answer
-- `ice-candidate` - ICE candidate exchange
-
-### Real-time Messaging
-- `message` - Send/receive messages
-- `typing` - Typing indicators
+- `PUT /api/contacts/:id` - Update contact status
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch: `git checkout -b feature-name`
+3. Make your changes
+4. Run tests: `npm test`
+5. Commit changes: `git commit -m 'Add feature'`
+6. Push to branch: `git push origin feature-name`
+7. Submit a pull request
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+## Support
 
-- Built with Replit's development platform
-- UI components from shadcn/ui
-- Icons from Lucide React
-- WebRTC implementation using native browser APIs
+For support, email support@securechat.com or create an issue on GitHub.
