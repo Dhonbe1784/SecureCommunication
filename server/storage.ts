@@ -16,12 +16,13 @@ import {
   type InsertCallLog,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, asc } from "drizzle-orm";
+import { eq, and, or, desc, asc, ilike } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  searchUsersByEmail(email: string): Promise<User[]>;
   
   // Contact operations
   getContacts(userId: string): Promise<Contact[]>;
@@ -61,6 +62,14 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+
+  async searchUsersByEmail(email: string): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(ilike(users.email, `%${email}%`))
+      .limit(10);
   }
 
   async getContacts(userId: string): Promise<Contact[]> {

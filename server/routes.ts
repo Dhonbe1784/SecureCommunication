@@ -178,9 +178,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Search query is required" });
       }
       
-      // In a real implementation, you'd search users by email/username
-      // For now, just return empty array
-      res.json([]);
+      // Search for users by email
+      const searchResults = await storage.searchUsersByEmail(q.toString());
+      res.json(searchResults);
     } catch (error) {
       console.error("Error searching users:", error);
       res.status(500).json({ message: "Failed to search users" });

@@ -22,13 +22,12 @@ export default function ContactModal({ isOpen, onClose, userId }: ContactModalPr
   const addContactMutation = useMutation({
     mutationFn: async () => {
       // First, search for user by email
-      const searchResponse = await apiRequest(
+      const searchResults = await apiRequest(
         "GET", 
         `/api/users/search?q=${encodeURIComponent(contactEmail)}`
       );
-      const searchResults = await searchResponse.json();
       
-      if (searchResults.length === 0) {
+      if (!searchResults || searchResults.length === 0) {
         throw new Error("User not found with this email address");
       }
       
@@ -37,7 +36,7 @@ export default function ContactModal({ isOpen, onClose, userId }: ContactModalPr
       // Then add as contact
       return await apiRequest("POST", "/api/contacts", {
         contactUserId: targetUser.id,
-        displayName: displayName || `${targetUser.firstName} ${targetUser.lastName}`.trim(),
+        displayName: displayName || `${targetUser.firstName || ''} ${targetUser.lastName || ''}`.trim() || targetUser.email,
         status: "pending"
       });
     },
