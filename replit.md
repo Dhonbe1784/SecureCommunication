@@ -128,6 +128,9 @@ Changelog:
 - June 27, 2025. Added WebSocket signaling improvements and call state debugging
 - June 27, 2025. Added conversation auto-clearing feature with 24h/1week/30days/never options
 - June 27, 2025. Created conversation settings modal for managing auto-clear preferences and manual message deletion
+- June 27, 2025. Fixed infinite call loop by implementing manual call initiation with start buttons
+- June 27, 2025. Added Info button functionality and enhanced error logging for debugging
+- June 27, 2025. Created GitHub repository setup with README, LICENSE, and .env.example files
 
 ## User Preferences
 
