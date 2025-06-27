@@ -85,15 +85,15 @@ export default function CallModal({
       // Start WebRTC
       startCall();
       
-      // For outgoing calls, send WebSocket signal (TEMPORARILY DISABLED TO STOP LOOP)
+      // For outgoing calls, send WebSocket signal
       if (!isIncomingCall) {
-        console.log('Would send call signal to:', targetUserId, '(disabled to stop loop)');
-        // sendWebSocketMessage({
-        //   type: 'call-start',
-        //   target: targetUserId,
-        //   conversationId,
-        //   data: { callType: 'voice' }
-        // });
+        console.log('Sending call signal to:', targetUserId);
+        sendWebSocketMessage({
+          type: 'call-start',
+          target: targetUserId,
+          conversationId,
+          data: { callType: 'voice' }
+        });
       }
     }
   };
@@ -211,29 +211,46 @@ export default function CallModal({
 
         {/* Call Controls */}
         <div className="flex justify-center space-x-4">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={handleToggleMute}
-            className={cn(
-              "rounded-full p-3",
-              isMuted && "bg-red-100 text-red-600 border-red-200"
-            )}
-          >
-            {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-          </Button>
+          {/* Show Start Call button for outgoing calls that haven't started */}
+          {!isIncomingCall && !callInitiatedRef.current && (
+            <Button
+              variant="default"
+              size="lg"
+              onClick={initiateCall}
+              className="rounded-full p-3 bg-green-600 hover:bg-green-700"
+            >
+              <Phone className="h-5 w-5" />
+            </Button>
+          )}
 
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => setIsSpeakerOn(!isSpeakerOn)}
-            className={cn(
-              "rounded-full p-3",
-              isSpeakerOn && "bg-blue-100 text-blue-600 border-blue-200"
-            )}
-          >
-            {isSpeakerOn ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-          </Button>
+          {/* Show call controls once call is initiated */}
+          {callInitiatedRef.current && (
+            <>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handleToggleMute}
+                className={cn(
+                  "rounded-full p-3",
+                  isMuted && "bg-red-100 text-red-600 border-red-200"
+                )}
+              >
+                {isMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+              </Button>
+
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setIsSpeakerOn(!isSpeakerOn)}
+                className={cn(
+                  "rounded-full p-3",
+                  isSpeakerOn && "bg-blue-100 text-blue-600 border-blue-200"
+                )}
+              >
+                {isSpeakerOn ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+              </Button>
+            </>
+          )}
 
           <Button
             variant="destructive"

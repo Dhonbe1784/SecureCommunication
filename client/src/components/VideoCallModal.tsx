@@ -88,33 +88,40 @@ export default function VideoCallModal({
     return () => clearInterval(interval);
   }, [callStatus]);
 
-  // Start call when modal opens
-  useEffect(() => {
-    if (isOpen && conversationId && targetUserId && !callInitiatedRef.current) {
+  // Manual call initiation function
+  const initiateCall = () => {
+    if (!callInitiatedRef.current && conversationId && targetUserId) {
       callInitiatedRef.current = true;
-      startCall();
+      console.log('Manually starting video call');
+      
       setCallStatus('connecting');
       setCallDuration(0);
       
-      // Only send call start signal for outgoing calls
+      // Start WebRTC
+      startCall();
+      
+      // For outgoing calls, send WebSocket signal
       if (!isIncomingCall) {
-        console.log('Sending video call start signal to:', targetUserId);
+        console.log('Sending video call signal to:', targetUserId);
         sendWebSocketMessage({
           type: 'call-start',
           target: targetUserId,
           conversationId,
           data: { callType: 'video' }
         });
-      } else {
-        console.log('Incoming video call - waiting for WebRTC connection...');
       }
     }
-    
-    // Reset when modal closes
-    if (!isOpen) {
+  };
+
+  // Reset call state when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setCallStatus('connecting');
+      setCallDuration(0);
+    } else {
       callInitiatedRef.current = false;
     }
-  }, [isOpen, conversationId, targetUserId, isIncomingCall]);
+  }, [isOpen]);
 
   const handleEndCall = () => {
     endCall();
@@ -216,53 +223,70 @@ export default function VideoCallModal({
 
       {/* Video Call Controls */}
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-4">
-        <Button
-          variant="secondary"
-          size="lg"
-          onClick={handleToggleMute}
-          className={cn(
-            "rounded-full p-3 bg-gray-800 bg-opacity-70 hover:bg-opacity-90",
-            isMuted && "bg-red-600 hover:bg-red-700"
-          )}
-        >
-          {isMuted ? (
-            <MicOff className="h-5 w-5 text-white" />
-          ) : (
-            <Mic className="h-5 w-5 text-white" />
-          )}
-        </Button>
-
-        <Button
-          variant="secondary"
-          size="lg"
-          onClick={handleToggleVideo}
-          className={cn(
-            "rounded-full p-3 bg-gray-800 bg-opacity-70 hover:bg-opacity-90",
-            !isVideoEnabled && "bg-red-600 hover:bg-red-700"
-          )}
-        >
-          {isVideoEnabled ? (
+        {/* Show Start Call button for outgoing calls that haven't started */}
+        {!isIncomingCall && !callInitiatedRef.current && (
+          <Button
+            variant="default"
+            size="lg"
+            onClick={initiateCall}
+            className="rounded-full p-3 bg-green-600 hover:bg-green-700"
+          >
             <Video className="h-5 w-5 text-white" />
-          ) : (
-            <VideoOff className="h-5 w-5 text-white" />
-          )}
-        </Button>
+          </Button>
+        )}
 
-        <Button
-          variant="secondary"
-          size="lg"
-          onClick={handleToggleScreenShare}
-          className={cn(
-            "rounded-full p-3 bg-gray-800 bg-opacity-70 hover:bg-opacity-90",
-            isScreenSharing && "bg-blue-600 hover:bg-blue-700"
-          )}
-        >
-          {isScreenSharing ? (
-            <MonitorOff className="h-5 w-5 text-white" />
-          ) : (
-            <Monitor className="h-5 w-5 text-white" />
-          )}
-        </Button>
+        {/* Show video controls once call is initiated */}
+        {callInitiatedRef.current && (
+          <>
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={handleToggleMute}
+              className={cn(
+                "rounded-full p-3 bg-gray-800 bg-opacity-70 hover:bg-opacity-90",
+                isMuted && "bg-red-600 hover:bg-red-700"
+              )}
+            >
+              {isMuted ? (
+                <MicOff className="h-5 w-5 text-white" />
+              ) : (
+                <Mic className="h-5 w-5 text-white" />
+              )}
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={handleToggleVideo}
+              className={cn(
+                "rounded-full p-3 bg-gray-800 bg-opacity-70 hover:bg-opacity-90",
+                !isVideoEnabled && "bg-red-600 hover:bg-red-700"
+              )}
+            >
+              {isVideoEnabled ? (
+                <Video className="h-5 w-5 text-white" />
+              ) : (
+                <VideoOff className="h-5 w-5 text-white" />
+              )}
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={handleToggleScreenShare}
+              className={cn(
+                "rounded-full p-3 bg-gray-800 bg-opacity-70 hover:bg-opacity-90",
+                isScreenSharing && "bg-blue-600 hover:bg-blue-700"
+              )}
+            >
+              {isScreenSharing ? (
+                <MonitorOff className="h-5 w-5 text-white" />
+              ) : (
+                <Monitor className="h-5 w-5 text-white" />
+              )}
+            </Button>
+          </>
+        )}
 
         <Button
           variant="destructive"
