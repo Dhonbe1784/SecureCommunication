@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -24,10 +24,12 @@ export default function CallModal({
   sendWebSocketMessage,
   isIncomingCall = false
 }: CallModalProps) {
+  console.log('🔄 CallModal render:', { isOpen, conversationId, userId, isIncomingCall });
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
   const [callStatus, setCallStatus] = useState<'connecting' | 'connected' | 'ended'>('connecting');
   const [callDuration, setCallDuration] = useState(0);
+  const callInitiatedRef = useRef(false);
 
   // Get conversation details to find the target user
   const { data: conversations = [] } = useQuery({
@@ -71,27 +73,40 @@ export default function CallModal({
     return () => clearInterval(interval);
   }, [callStatus]);
 
-  // Start call when modal opens
-  useEffect(() => {
-    if (isOpen && conversationId && targetUserId) {
-      startCall();
+  // Manual call initiation function
+  const initiateCall = () => {
+    if (!callInitiatedRef.current && conversationId && targetUserId) {
+      callInitiatedRef.current = true;
+      console.log('Manually starting call');
+      
       setCallStatus('connecting');
       setCallDuration(0);
       
-      // Only send call start signal for outgoing calls
+      // Start WebRTC
+      startCall();
+      
+      // For outgoing calls, send WebSocket signal (TEMPORARILY DISABLED TO STOP LOOP)
       if (!isIncomingCall) {
-        console.log('Sending call start signal to:', targetUserId);
-        sendWebSocketMessage({
-          type: 'call-start',
-          target: targetUserId,
-          conversationId,
-          data: { callType: 'voice' }
-        });
-      } else {
-        console.log('Incoming call - waiting for WebRTC connection...');
+        console.log('Would send call signal to:', targetUserId, '(disabled to stop loop)');
+        // sendWebSocketMessage({
+        //   type: 'call-start',
+        //   target: targetUserId,
+        //   conversationId,
+        //   data: { callType: 'voice' }
+        // });
       }
     }
-  }, [isOpen, conversationId, targetUserId, startCall, sendWebSocketMessage, isIncomingCall]);
+  };
+
+  // Reset call state when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setCallStatus('connecting');
+      setCallDuration(0);
+    } else {
+      callInitiatedRef.current = false;
+    }
+  }, [isOpen]);
 
   // Listen for WebSocket signaling messages
   useEffect(() => {

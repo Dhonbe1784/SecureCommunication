@@ -28,6 +28,7 @@ export default function VideoCallModal({
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [callStatus, setCallStatus] = useState<'connecting' | 'connected' | 'ended'>('connecting');
   const [callDuration, setCallDuration] = useState(0);
+  const callInitiatedRef = useRef(false);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -89,7 +90,8 @@ export default function VideoCallModal({
 
   // Start call when modal opens
   useEffect(() => {
-    if (isOpen && conversationId && targetUserId) {
+    if (isOpen && conversationId && targetUserId && !callInitiatedRef.current) {
+      callInitiatedRef.current = true;
       startCall();
       setCallStatus('connecting');
       setCallDuration(0);
@@ -107,7 +109,12 @@ export default function VideoCallModal({
         console.log('Incoming video call - waiting for WebRTC connection...');
       }
     }
-  }, [isOpen, conversationId, targetUserId, startCall, sendWebSocketMessage, isIncomingCall]);
+    
+    // Reset when modal closes
+    if (!isOpen) {
+      callInitiatedRef.current = false;
+    }
+  }, [isOpen, conversationId, targetUserId, isIncomingCall]);
 
   const handleEndCall = () => {
     endCall();
