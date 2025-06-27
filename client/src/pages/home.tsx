@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { useQueryClient } from "@tanstack/react-query";
 import ChatSidebar from "@/components/ChatSidebar";
 import ChatArea from "@/components/ChatArea";
 import CallModal from "@/components/CallModal";
@@ -17,7 +18,8 @@ export default function Home() {
   const [isVideoCallModalOpen, setIsVideoCallModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
-  const { isConnected, sendMessage } = useWebSocket();
+  const { isConnected, sendMessage, lastMessage } = useWebSocket();
+  const queryClient = useQueryClient();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -33,6 +35,23 @@ export default function Home() {
       return;
     }
   }, [isAuthenticated, isLoading, toast]);
+
+  // Handle WebSocket messages for real-time updates
+  useEffect(() => {
+    if (lastMessage) {
+      if (lastMessage.type === 'new-message' || lastMessage.type === 'broadcast') {
+        // Refresh conversations list to show new messages
+        queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+        
+        // If the message is for the currently selected conversation, refresh messages
+        if (lastMessage.conversationId === selectedConversationId) {
+          queryClient.invalidateQueries({ 
+            queryKey: ["/api/conversations", selectedConversationId, "messages"] 
+          });
+        }
+      }
+    }
+  }, [lastMessage, queryClient, selectedConversationId]);
 
   if (isLoading) {
     return (

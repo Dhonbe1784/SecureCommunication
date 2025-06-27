@@ -70,22 +70,13 @@ export default function ChatArea({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Listen for new messages via WebSocket
+  // The WebSocket message handling is done in the parent component
+  // We just need to refresh queries when messages change
   useEffect(() => {
-    const handleWebSocketMessage = (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'new-message' && data.conversationId === conversationId) {
-          queryClient.invalidateQueries({ queryKey: ["/api/conversations", conversationId, "messages"] });
-          queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
-        }
-      } catch (error) {
-        console.error("Error parsing WebSocket message:", error);
-      }
-    };
-
-    window.addEventListener('message', handleWebSocketMessage);
-    return () => window.removeEventListener('message', handleWebSocketMessage);
+    // Refresh messages when conversation changes
+    if (conversationId) {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations", conversationId, "messages"] });
+    }
   }, [conversationId, queryClient]);
 
   const handleSendMessage = () => {

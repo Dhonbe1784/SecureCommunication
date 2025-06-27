@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,10 +24,17 @@ export default function ChatSidebar({
 }: ChatSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: conversations = [], isLoading } = useQuery({
+  const { data: conversations = [], isLoading, refetch } = useQuery({
     queryKey: ["/api/conversations"],
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 5000, // Refresh every 5 seconds for better real-time updates
   });
+
+  // Force refresh conversations when websocket connects
+  useEffect(() => {
+    if (websocketConnected) {
+      refetch();
+    }
+  }, [websocketConnected, refetch]);
 
   const filteredConversations = conversations.filter((conv: any) =>
     conv.otherUser?.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
