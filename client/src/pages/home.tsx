@@ -1,0 +1,96 @@
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import ChatSidebar from "@/components/ChatSidebar";
+import ChatArea from "@/components/ChatArea";
+import CallModal from "@/components/CallModal";
+import VideoCallModal from "@/components/VideoCallModal";
+import ContactModal from "@/components/ContactModal";
+import { useToast } from "@/hooks/use-toast";
+import { isUnauthorizedError } from "@/lib/authUtils";
+
+export default function Home() {
+  const { user, isLoading, isAuthenticated } = useAuth();
+  const { toast } = useToast();
+  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
+  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
+  const [isVideoCallModalOpen, setIsVideoCallModalOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+
+  const { isConnected, sendMessage } = useWebSocket();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      toast({
+        title: "Unauthorized",
+        description: "You are logged out. Redirecting to login...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 500);
+      return;
+    }
+  }, [isAuthenticated, isLoading, toast]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your secure chat...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return null;
+  }
+
+  return (
+    <div className="h-screen overflow-hidden bg-gray-50">
+      <div className="flex h-full">
+        <ChatSidebar
+          userId={user.id}
+          selectedConversationId={selectedConversationId}
+          onConversationSelect={setSelectedConversationId}
+          onNewChatClick={() => setIsContactModalOpen(true)}
+          websocketConnected={isConnected}
+        />
+        
+        <ChatArea
+          userId={user.id}
+          conversationId={selectedConversationId}
+          onVoiceCall={() => setIsCallModalOpen(true)}
+          onVideoCall={() => setIsVideoCallModalOpen(true)}
+          sendWebSocketMessage={sendMessage}
+        />
+      </div>
+
+      {/* Modals */}
+      <CallModal
+        isOpen={isCallModalOpen}
+        onClose={() => setIsCallModalOpen(false)}
+        conversationId={selectedConversationId}
+        userId={user.id}
+        sendWebSocketMessage={sendMessage}
+      />
+
+      <VideoCallModal
+        isOpen={isVideoCallModalOpen}
+        onClose={() => setIsVideoCallModalOpen(false)}
+        conversationId={selectedConversationId}
+        userId={user.id}
+        sendWebSocketMessage={sendMessage}
+      />
+
+      <ContactModal
+        isOpen={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
+        userId={user.id}
+      />
+    </div>
+  );
+}
