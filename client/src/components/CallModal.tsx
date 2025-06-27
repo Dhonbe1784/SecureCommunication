@@ -13,6 +13,7 @@ interface CallModalProps {
   conversationId: number | null;
   userId: string;
   sendWebSocketMessage: (message: any) => void;
+  isIncomingCall?: boolean;
 }
 
 export default function CallModal({
@@ -20,7 +21,8 @@ export default function CallModal({
   onClose,
   conversationId,
   userId,
-  sendWebSocketMessage
+  sendWebSocketMessage,
+  isIncomingCall = false
 }: CallModalProps) {
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(true);
@@ -76,16 +78,20 @@ export default function CallModal({
       setCallStatus('connecting');
       setCallDuration(0);
       
-      // Send call start signal via WebSocket to the target user
-      console.log('Sending call start signal to:', targetUserId);
-      sendWebSocketMessage({
-        type: 'call-start',
-        target: targetUserId,
-        conversationId,
-        data: { callType: 'voice' }
-      });
+      // Only send call start signal for outgoing calls
+      if (!isIncomingCall) {
+        console.log('Sending call start signal to:', targetUserId);
+        sendWebSocketMessage({
+          type: 'call-start',
+          target: targetUserId,
+          conversationId,
+          data: { callType: 'voice' }
+        });
+      } else {
+        console.log('Incoming call - waiting for WebRTC connection...');
+      }
     }
-  }, [isOpen, conversationId, targetUserId, startCall, sendWebSocketMessage]);
+  }, [isOpen, conversationId, targetUserId, startCall, sendWebSocketMessage, isIncomingCall]);
 
   // Listen for WebSocket signaling messages
   useEffect(() => {

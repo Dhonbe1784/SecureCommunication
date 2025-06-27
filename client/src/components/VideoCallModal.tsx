@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Monitor, MonitorOff } from "lucide-react";
 import { useWebRTC } from "@/hooks/useWebRTC";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,7 @@ interface VideoCallModalProps {
   conversationId: number | null;
   userId: string;
   sendWebSocketMessage: (message: any) => void;
+  isIncomingCall?: boolean;
 }
 
 export default function VideoCallModal({
@@ -18,7 +20,8 @@ export default function VideoCallModal({
   onClose,
   conversationId,
   userId,
-  sendWebSocketMessage
+  sendWebSocketMessage,
+  isIncomingCall = false
 }: VideoCallModalProps) {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
@@ -28,6 +31,14 @@ export default function VideoCallModal({
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+
+  // Get conversation details to find the target user
+  const { data: conversations = [] } = useQuery({
+    queryKey: ["/api/conversations"],
+  });
+
+  const currentConversation = conversations.find((conv: any) => conv.id === conversationId);
+  const targetUserId = currentConversation?.otherUser?.id;
 
   const {
     localStream,
@@ -78,19 +89,25 @@ export default function VideoCallModal({
 
   // Start call when modal opens
   useEffect(() => {
-    if (isOpen && conversationId) {
+    if (isOpen && conversationId && targetUserId) {
       startCall();
       setCallStatus('connecting');
       setCallDuration(0);
       
-      // Send call start signal via WebSocket
-      sendWebSocketMessage({
-        type: 'call-start',
-        target: conversationId.toString(),
-        data: { callType: 'video' }
-      });
+      // Only send call start signal for outgoing calls
+      if (!isIncomingCall) {
+        console.log('Sending video call start signal to:', targetUserId);
+        sendWebSocketMessage({
+          type: 'call-start',
+          target: targetUserId,
+          conversationId,
+          data: { callType: 'video' }
+        });
+      } else {
+        console.log('Incoming video call - waiting for WebRTC connection...');
+      }
     }
-  }, [isOpen, conversationId, startCall, sendWebSocketMessage]);
+  }, [isOpen, conversationId, targetUserId, startCall, sendWebSocketMessage, isIncomingCall]);
 
   const handleEndCall = () => {
     endCall();

@@ -20,6 +20,7 @@ export default function Home() {
   const [isVideoCallModalOpen, setIsVideoCallModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isConversationSettingsOpen, setIsConversationSettingsOpen] = useState(false);
+  const [isIncomingCall, setIsIncomingCall] = useState(false);
   const [incomingCall, setIncomingCall] = useState<{type: 'voice' | 'video', fromUserId: string, conversationId: number} | null>(null);
 
   const { isConnected, sendMessage, lastMessage } = useWebSocket();
@@ -103,8 +104,14 @@ export default function Home() {
         <ChatArea
           userId={user.id}
           conversationId={selectedConversationId}
-          onVoiceCall={() => setIsCallModalOpen(true)}
-          onVideoCall={() => setIsVideoCallModalOpen(true)}
+          onVoiceCall={() => {
+            setIsIncomingCall(false);
+            setIsCallModalOpen(true);
+          }}
+          onVideoCall={() => {
+            setIsIncomingCall(false);
+            setIsVideoCallModalOpen(true);
+          }}
           onConversationSettings={() => setIsConversationSettingsOpen(true)}
           sendWebSocketMessage={sendMessage}
         />
@@ -113,18 +120,26 @@ export default function Home() {
       {/* Modals */}
       <CallModal
         isOpen={isCallModalOpen}
-        onClose={() => setIsCallModalOpen(false)}
+        onClose={() => {
+          setIsCallModalOpen(false);
+          setIsIncomingCall(false);
+        }}
         conversationId={selectedConversationId}
         userId={user.id}
         sendWebSocketMessage={sendMessage}
+        isIncomingCall={isIncomingCall}
       />
 
       <VideoCallModal
         isOpen={isVideoCallModalOpen}
-        onClose={() => setIsVideoCallModalOpen(false)}
+        onClose={() => {
+          setIsVideoCallModalOpen(false);
+          setIsIncomingCall(false);
+        }}
         conversationId={selectedConversationId}
         userId={user.id}
         sendWebSocketMessage={sendMessage}
+        isIncomingCall={isIncomingCall}
       />
 
       <ContactModal
@@ -142,6 +157,7 @@ export default function Home() {
           conversationId={incomingCall.conversationId}
           onAccept={() => {
             setSelectedConversationId(incomingCall.conversationId);
+            setIsIncomingCall(true);
             if (incomingCall.type === 'video') {
               setIsVideoCallModalOpen(true);
             } else {
