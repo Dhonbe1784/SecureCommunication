@@ -7,6 +7,7 @@ import ChatArea from "@/components/ChatArea";
 import CallModal from "@/components/CallModal";
 import VideoCallModal from "@/components/VideoCallModal";
 import ContactModal from "@/components/ContactModal";
+import IncomingCallModal from "@/components/IncomingCallModal";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 
@@ -17,6 +18,7 @@ export default function Home() {
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [isVideoCallModalOpen, setIsVideoCallModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [incomingCall, setIncomingCall] = useState<{type: 'voice' | 'video', fromUserId: string, conversationId: number} | null>(null);
 
   const { isConnected, sendMessage, lastMessage } = useWebSocket();
   const queryClient = useQueryClient();
@@ -49,6 +51,23 @@ export default function Home() {
             queryKey: [`/api/conversations/${selectedConversationId}/messages`] 
           });
         }
+      }
+      
+      // Handle incoming call
+      if (lastMessage.type === 'call-start') {
+        const callType = lastMessage.data?.callType === 'video' ? 'video' : 'voice';
+        setIncomingCall({
+          type: callType,
+          fromUserId: lastMessage.from,
+          conversationId: lastMessage.conversationId
+        });
+      }
+      
+      // Handle call end
+      if (lastMessage.type === 'call-end') {
+        setIncomingCall(null);
+        setIsCallModalOpen(false);
+        setIsVideoCallModalOpen(false);
       }
     }
   }, [lastMessage, queryClient, selectedConversationId]);
@@ -110,6 +129,27 @@ export default function Home() {
         onClose={() => setIsContactModalOpen(false)}
         userId={user.id}
       />
+
+      {/* Incoming Call Modal */}
+      {incomingCall && (
+        <IncomingCallModal
+          isOpen={!!incomingCall}
+          callType={incomingCall.type}
+          fromUserId={incomingCall.fromUserId}
+          conversationId={incomingCall.conversationId}
+          onAccept={() => {
+            setSelectedConversationId(incomingCall.conversationId);
+            if (incomingCall.type === 'video') {
+              setIsVideoCallModalOpen(true);
+            } else {
+              setIsCallModalOpen(true);
+            }
+            setIncomingCall(null);
+          }}
+          onReject={() => setIncomingCall(null)}
+          sendWebSocketMessage={sendMessage}
+        />
+      )}
     </div>
   );
 }

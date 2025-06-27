@@ -124,6 +124,8 @@ Changelog:
 - June 27, 2025. Added functional voice and video calling with WebRTC
 - June 27, 2025. Implemented user search and contact management system
 - June 27, 2025. Fixed API response parsing in ContactModal for proper contact addition
+- June 27, 2025. Implemented incoming call notifications and acceptance/rejection system
+- June 27, 2025. Added WebSocket signaling improvements and call state debugging
 
 ## User Preferences
 

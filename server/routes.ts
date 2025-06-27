@@ -217,13 +217,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Handle signaling messages
         if (ws.userId && data.target) {
+          console.log(`Handling ${data.type} message from ${ws.userId} to ${data.target}`);
           const targetWs = connectedClients.get(data.target);
+          
           if (targetWs && targetWs.readyState === WebSocket.OPEN) {
-            targetWs.send(JSON.stringify({
+            const messageToSend = {
               ...data,
               from: ws.userId
-            }));
+            };
+            targetWs.send(JSON.stringify(messageToSend));
+            console.log(`✓ Message forwarded to ${data.target}`);
+          } else {
+            console.log(`✗ Target user ${data.target} not connected or WebSocket not open`);
+            console.log(`Connected clients: ${Array.from(connectedClients.keys()).join(', ')}`);
           }
+        } else {
+          console.log(`Invalid message: userId=${ws.userId}, target=${data.target}`);
         }
       } catch (error) {
         console.error('WebSocket message error:', error);

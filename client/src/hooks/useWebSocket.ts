@@ -48,7 +48,7 @@ export function useWebSocket(): UseWebSocketReturn {
           setLastMessage(data);
           
           // Dispatch custom event for components to listen to
-          window.dispatchEvent(new MessageEvent('websocket-message', { data: event.data }));
+          window.dispatchEvent(new CustomEvent('websocket-message', { detail: event.data }));
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error);
         }
