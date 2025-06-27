@@ -8,6 +8,7 @@ import CallModal from "@/components/CallModal";
 import VideoCallModal from "@/components/VideoCallModal";
 import ContactModal from "@/components/ContactModal";
 import IncomingCallModal from "@/components/IncomingCallModal";
+import ConversationSettingsModal from "@/components/ConversationSettingsModal";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 
@@ -18,6 +19,7 @@ export default function Home() {
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [isVideoCallModalOpen, setIsVideoCallModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isConversationSettingsOpen, setIsConversationSettingsOpen] = useState(false);
   const [incomingCall, setIncomingCall] = useState<{type: 'voice' | 'video', fromUserId: string, conversationId: number} | null>(null);
 
   const { isConnected, sendMessage, lastMessage } = useWebSocket();
@@ -103,6 +105,7 @@ export default function Home() {
           conversationId={selectedConversationId}
           onVoiceCall={() => setIsCallModalOpen(true)}
           onVideoCall={() => setIsVideoCallModalOpen(true)}
+          onConversationSettings={() => setIsConversationSettingsOpen(true)}
           sendWebSocketMessage={sendMessage}
         />
       </div>
@@ -150,6 +153,13 @@ export default function Home() {
           sendWebSocketMessage={sendMessage}
         />
       )}
+
+      {/* Conversation Settings Modal */}
+      <ConversationSettingsModal
+        isOpen={isConversationSettingsOpen}
+        onClose={() => setIsConversationSettingsOpen(false)}
+        conversationId={selectedConversationId}
+      />
     </div>
   );
 }

@@ -52,6 +52,8 @@ export const conversations = pgTable("conversations", {
   participant2Id: varchar("participant2_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   lastMessageAt: timestamp("last_message_at").defaultNow(),
   createdAt: timestamp("created_at").defaultNow(),
+  autoClearAfter: varchar("auto_clear_after").default("never"), // "24h", "1week", "30days", "never"
+  lastClearedAt: timestamp("last_cleared_at"),
 });
 
 // Messages table

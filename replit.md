@@ -126,6 +126,8 @@ Changelog:
 - June 27, 2025. Fixed API response parsing in ContactModal for proper contact addition
 - June 27, 2025. Implemented incoming call notifications and acceptance/rejection system
 - June 27, 2025. Added WebSocket signaling improvements and call state debugging
+- June 27, 2025. Added conversation auto-clearing feature with 24h/1week/30days/never options
+- June 27, 2025. Created conversation settings modal for managing auto-clear preferences and manual message deletion
 
 ## User Preferences
 

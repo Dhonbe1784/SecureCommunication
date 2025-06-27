@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Video, Info, Paperclip, Smile, Send, Lock, User } from "lucide-react";
+import { Phone, Video, Info, Paperclip, Smile, Send, Lock, User, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ interface ChatAreaProps {
   conversationId: number | null;
   onVoiceCall: () => void;
   onVideoCall: () => void;
+  onConversationSettings: () => void;
   sendWebSocketMessage: (message: any) => void;
 }
 
@@ -22,6 +23,7 @@ export default function ChatArea({
   conversationId,
   onVoiceCall,
   onVideoCall,
+  onConversationSettings,
   sendWebSocketMessage
 }: ChatAreaProps) {
   const [messageText, setMessageText] = useState("");
@@ -169,6 +171,14 @@ export default function ChatArea({
           </Button>
           <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
             <Info className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onConversationSettings}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <Settings className="h-4 w-4" />
           </Button>
         </div>
       </div>

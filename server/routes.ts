@@ -187,6 +187,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Conversation clearing endpoints
+  app.put('/api/conversations/:id/clear-settings', isAuthenticated, async (req: any, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const { autoClearAfter } = req.body;
+      
+      if (!['24h', '1week', '30days', 'never'].includes(autoClearAfter)) {
+        return res.status(400).json({ message: 'Invalid auto clear setting' });
+      }
+      
+      const conversation = await storage.updateConversationClearSettings(conversationId, autoClearAfter);
+      if (!conversation) {
+        return res.status(404).json({ message: 'Conversation not found' });
+      }
+      
+      res.json(conversation);
+    } catch (error) {
+      console.error('Error updating conversation clear settings:', error);
+      res.status(500).json({ message: 'Failed to update settings' });
+    }
+  });
+
+  app.delete('/api/conversations/:id/messages', isAuthenticated, async (req: any, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      await storage.clearConversationMessages(conversationId);
+      res.json({ message: 'Messages cleared successfully' });
+    } catch (error) {
+      console.error('Error clearing conversation messages:', error);
+      res.status(500).json({ message: 'Failed to clear messages' });
+    }
+  });
+
   const httpServer = createServer(app);
 
   // WebSocket server for real-time signaling

@@ -16,7 +16,7 @@ import {
   type InsertCallLog,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, or, desc, asc, ilike } from "drizzle-orm";
+import { eq, and, or, desc, asc, ilike, isNotNull, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -32,6 +32,9 @@ export interface IStorage {
   // Conversation operations
   getConversations(userId: string): Promise<(Conversation & { otherUser: User; lastMessage?: Message })[]>;
   getOrCreateConversation(participant1Id: string, participant2Id: string): Promise<Conversation>;
+  updateConversationClearSettings(conversationId: number, autoClearAfter: string): Promise<Conversation | undefined>;
+  clearConversationMessages(conversationId: number): Promise<void>;
+  getConversationsToClean(): Promise<Conversation[]>;
   
   // Message operations
   getMessages(conversationId: number, limit?: number): Promise<(Message & { sender: User })[]>;
@@ -240,6 +243,55 @@ export class DatabaseStorage implements IStorage {
       .where(eq(callLogs.id, id))
       .returning();
     return updatedCallLog;
+  }
+
+  // Conversation clearing operations
+  async updateConversationClearSettings(conversationId: number, autoClearAfter: string): Promise<Conversation | undefined> {
+    const [conversation] = await db
+      .update(conversations)
+      .set({ autoClearAfter })
+      .where(eq(conversations.id, conversationId))
+      .returning();
+    return conversation;
+  }
+
+  async clearConversationMessages(conversationId: number): Promise<void> {
+    await db
+      .delete(messages)
+      .where(eq(messages.conversationId, conversationId));
+    
+    // Update last cleared timestamp
+    await db
+      .update(conversations)
+      .set({ lastClearedAt: new Date() })
+      .where(eq(conversations.id, conversationId));
+  }
+
+  async getConversationsToClean(): Promise<Conversation[]> {
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    return await db
+      .select()
+      .from(conversations)
+      .where(
+        or(
+          and(
+            eq(conversations.autoClearAfter, "24h"),
+            sql`${conversations.lastMessageAt} < ${oneDayAgo.toISOString()}`
+          ),
+          and(
+            eq(conversations.autoClearAfter, "1week"),
+            sql`${conversations.lastMessageAt} < ${oneWeekAgo.toISOString()}`
+          ),
+          and(
+            eq(conversations.autoClearAfter, "30days"),
+            sql`${conversations.lastMessageAt} < ${thirtyDaysAgo.toISOString()}`
+          )
+        )
+      );
   }
 }
 
