@@ -201,6 +201,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const data = JSON.parse(message.toString()) as SignalingMessage & { userId?: string };
         
         // Handle authentication
+        if (data.userId && !data.type) {
+          ws.userId = data.userId;
+          connectedClients.set(data.userId, ws);
+          console.log(`User ${data.userId} connected via WebSocket`);
+          return;
+        }
+        
         if (data.type === 'auth' && data.userId) {
           ws.userId = data.userId;
           connectedClients.set(data.userId, ws);

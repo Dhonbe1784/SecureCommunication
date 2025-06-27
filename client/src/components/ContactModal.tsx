@@ -22,10 +22,12 @@ export default function ContactModal({ isOpen, onClose, userId }: ContactModalPr
   const addContactMutation = useMutation({
     mutationFn: async () => {
       // First, search for user by email
-      const searchResults = await apiRequest(
+      const searchResponse = await apiRequest(
         "GET", 
         `/api/users/search?q=${encodeURIComponent(contactEmail)}`
       );
+      
+      const searchResults = await searchResponse.json();
       
       if (!searchResults || searchResults.length === 0) {
         throw new Error("User not found with this email address");
@@ -33,19 +35,41 @@ export default function ContactModal({ isOpen, onClose, userId }: ContactModalPr
       
       const targetUser = searchResults[0];
       
+      if (!targetUser || !targetUser.id) {
+        throw new Error("Invalid user data received");
+      }
+      
+      // Check if trying to add yourself
+      if (targetUser.id === userId) {
+        throw new Error("You cannot add yourself as a contact");
+      }
+      
       // Then add as contact
-      return await apiRequest("POST", "/api/contacts", {
+      const addResponse = await apiRequest("POST", "/api/contacts", {
         contactUserId: targetUser.id,
         displayName: displayName || `${targetUser.firstName || ''} ${targetUser.lastName || ''}`.trim() || targetUser.email,
         status: "pending"
       });
+      
+      return await addResponse.json();
     },
-    onSuccess: () => {
+    onSuccess: async (newContact) => {
       queryClient.invalidateQueries({ queryKey: ["/api/contacts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      
+      // Create conversation with the new contact
+      try {
+        await apiRequest("POST", "/api/conversations", {
+          participantId: newContact.contactUserId
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      } catch (error) {
+        console.log("Conversation creation handled separately");
+      }
+      
       toast({
         title: "Contact added",
-        description: "Contact has been added successfully",
+        description: "Contact has been added successfully and conversation created",
       });
       handleClose();
     },

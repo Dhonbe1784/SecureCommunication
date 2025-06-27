@@ -121,6 +121,9 @@ SecureChat is a modern, full-stack real-time communication platform built with R
 
 Changelog:
 - June 27, 2025. Initial setup
+- June 27, 2025. Added functional voice and video calling with WebRTC
+- June 27, 2025. Implemented user search and contact management system
+- June 27, 2025. Fixed API response parsing in ContactModal for proper contact addition
 
 ## User Preferences
 
