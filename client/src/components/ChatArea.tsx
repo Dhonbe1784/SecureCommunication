@@ -38,7 +38,7 @@ export default function ChatArea({
 
   // Get messages for current conversation
   const { data: messages = [], isLoading: messagesLoading } = useQuery({
-    queryKey: ["/api/conversations", conversationId, "messages"],
+    queryKey: [`/api/conversations/${conversationId}/messages`],
     enabled: !!conversationId,
   });
 
@@ -52,7 +52,7 @@ export default function ChatArea({
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations", conversationId, "messages"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${conversationId}/messages`] });
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
       setMessageText("");
     },
@@ -75,7 +75,7 @@ export default function ChatArea({
   useEffect(() => {
     // Refresh messages when conversation changes
     if (conversationId) {
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations", conversationId, "messages"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/conversations/${conversationId}/messages`] });
     }
   }, [conversationId, queryClient]);
 

@@ -46,7 +46,7 @@ export default function Home() {
         // If the message is for the currently selected conversation, refresh messages
         if (lastMessage.conversationId === selectedConversationId) {
           queryClient.invalidateQueries({ 
-            queryKey: ["/api/conversations", selectedConversationId, "messages"] 
+            queryKey: [`/api/conversations/${selectedConversationId}/messages`] 
           });
         }
       }
