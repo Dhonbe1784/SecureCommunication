@@ -20,7 +20,7 @@ export function useWebSocket(): UseWebSocketReturn {
   const maxReconnectAttempts = 5;
 
   const connect = useCallback(() => {
-    if (!user?.id) return;
+    if (!user) return;
 
     try {
       // Check if we're on Vercel or similar serverless platform

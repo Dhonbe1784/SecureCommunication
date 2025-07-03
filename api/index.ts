@@ -1,49 +1,81 @@
-import express, { type Request, Response, NextFunction } from "express";
-import { storage } from "../server/storage";
-import { setupAuth, isAuthenticated } from "../server/replitAuth";
-import { insertContactSchema, insertMessageSchema, insertCallLogSchema } from "../shared/schema";
-import { z } from "zod";
+import { VercelRequest, VercelResponse } from '@vercel/node';
 
-const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+export default function handler(req: VercelRequest, res: VercelResponse) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
-const log = (message: string) => {
-  console.log(`[${new Date().toISOString()}] ${message}`);
-};
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
 
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  // For now, return a simple response indicating WebSocket limitations
+  if (req.url?.startsWith('/api')) {
+    return res.status(200).json({
+      message: 'API endpoint',
+      note: 'This is a Vercel deployment. WebSocket features (real-time chat, calls) are not available.',
+      availableFeatures: [
+        'User authentication',
+        'Contact management', 
+        'Message sending (no real-time updates)',
+        'Conversation management'
+      ]
+    });
+  }
 
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
+  // Serve static files or redirect to main app
+  res.setHeader('Content-Type', 'text/html');
+  res.status(200).send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>SecureChat - Vercel Deployment</title>
+        <style>
+          body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+          .warning { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          .info { background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <h1>SecureChat - Vercel Deployment</h1>
+        
+        <div class="warning">
+          <strong>⚠️ Limited Functionality Notice</strong><br>
+          This is a Vercel deployment with limited features. WebSocket-dependent features are not available:
+          <ul>
+            <li>Real-time chat updates</li>
+            <li>Voice calling</li>
+            <li>Video calling</li>
+            <li>Live notifications</li>
+          </ul>
+        </div>
 
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
+        <div class="info">
+          <strong>✅ Available Features:</strong>
+          <ul>
+            <li>User authentication</li>
+            <li>Contact management</li>
+            <li>Message sending (without real-time updates)</li>
+            <li>Conversation management</li>
+          </ul>
+        </div>
 
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
+        <p>
+          <strong>For full functionality</strong>, deploy to a platform that supports WebSocket connections such as:
+          Railway, Render, Heroku, or DigitalOcean App Platform.
+        </p>
 
-      log(logLine);
-    }
-  });
-
-  next();
-});
-
-// Setup auth
-setupAuth(app);
+        <p>
+          <a href="https://github.com/your-username/secure-chat" target="_blank">View Source Code</a> |
+          <a href="/VERCEL_DEPLOYMENT.md" target="_blank">Deployment Guide</a>
+        </p>
+      </body>
+    </html>
+  `);
+}
 
 // Auth routes
 app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
