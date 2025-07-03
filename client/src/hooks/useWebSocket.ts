@@ -23,6 +23,17 @@ export function useWebSocket(): UseWebSocketReturn {
     if (!user?.id) return;
 
     try {
+      // Check if we're on Vercel or similar serverless platform
+      const isServerless = window.location.hostname.includes('vercel.app') || 
+                          window.location.hostname.includes('netlify.app') ||
+                          window.location.hostname.includes('railway.app');
+      
+      if (isServerless) {
+        console.log('WebSocket not available on serverless platform');
+        setError('Real-time features unavailable on this platform');
+        return;
+      }
+
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const wsUrl = `${protocol}//${window.location.host}/ws`;
       
